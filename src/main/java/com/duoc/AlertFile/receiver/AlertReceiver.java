@@ -18,36 +18,42 @@ public class AlertReceiver {
 
     private final S3Service s3Service;
 
-    public AlertReceiver( S3Service s3Service ){
+    public AlertReceiver(S3Service s3Service) {
         this.s3Service = s3Service;
     }
 
-    @RabbitListener(queues = "Alerta_List")
+    @RabbitListener(queues = "Alert_List")
     public void receiveMessage(String message) {
         System.out.println("Mensaje recibido: " + message);
-        boolean isValidAlertJson = isValidJson(message,VitalSignAlert.class);
+        boolean isValidAlertJson = isValidJson(message, VitalSignAlert.class);
 
         if (isValidAlertJson) {
-            
+
             try {
+                File directory = new File("/app/data");
+                if (!directory.exists()) {
+                    directory.mkdirs(); 
+                }
+
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
                 String timestamp = LocalDateTime.now().format(formatter);
 
-                File tempFile = File.createTempFile("${file.upload-dir}/alerta_"+timestamp+"_", ".json");
+                File tempFile = new File("/app/data/alerta_" + timestamp + ".json");
                 FileWriter writer = new FileWriter(tempFile);
                 writer.write(message);
                 writer.close();
                 System.out.println("Ruta: " + tempFile.getAbsolutePath());
 
-                //s3Service.uploadFile(tempFile.getAbsolutePath(), "uploads/alerta_"+timestamp+".json");
+                // s3Service.uploadFile(tempFile.getAbsolutePath(),
+                // "uploads/alerta_"+timestamp+".json");
 
-                //tempFile.delete();
-            } catch (Exception e) { 
+                // tempFile.delete();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
             System.out.println("Archivo JSON guardado");
-        }else{
+        } else {
             System.out.println("Error al generar archivo");
         }
     }
@@ -56,9 +62,9 @@ public class AlertReceiver {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             objectMapper.readValue(json, clazz);
-            return true; 
+            return true;
         } catch (JsonProcessingException e) {
-            return false; 
+            return false;
         }
     }
 
